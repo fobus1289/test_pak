@@ -137,7 +137,7 @@ See the [`/test`](test/README.md) directory for examples.
 
 Design and user documents (in addition to your godoc generated documentation).
 
-See the [`/docs`](docs/README.md) directory for examples.
+See the [`/docs`](router/README.md) directory for examples.
 
 ### `/tools`
 
@@ -149,7 +149,7 @@ See the [`/tools`](tools/README.md) directory for examples.
 
 Examples for your applications and/or public libraries.
 
-See the [`/examples`](examples/README.md) directory for examples.
+See the [`/examples`](test/README.md) directory for examples.
 
 ### `/third_party`
 

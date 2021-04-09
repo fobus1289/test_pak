@@ -2,59 +2,45 @@ package main
 
 import (
 	"fmt"
+	"github.com/fobus1289/test_pak/logger"
 	"github.com/fobus1289/test_pak/request"
 	"log"
 	"net/http"
-	"regexp"
-	"runtime"
+	"strconv"
 	"time"
+	"unsafe"
 )
 
-type Name struct {
-	Id   int    `json:"id"`
-	Name string `json:"name"`
+var Logger = logger.New()
+
+func a(logger2 *logger.Logger, string2 string) {
+	logger2.INFO(string2)
 }
 
-func asd(bb bool) {
-
-	if !bb {
-		fmt.Println("hello man")
-	}
-
-	pc := make([]uintptr, 16)
-	n := runtime.Callers(1, pc)
-	fmt.Println(pc[:n])
-	frames := runtime.CallersFrames(pc[:n])
-	frame, more := frames.Next()
-	var name = make([]byte, 11111)
-	ad := runtime.Stack(name, true)
-
-	fmt.Println(string(name))
-	fmt.Println(ad)
-	fmt.Println(more)
-	fmt.Println(frame)
-
+func b(logger2 *logger.Logger, string2 string) {
+	logger2.WARNING(string2)
 }
 
-func reg() {
-	r, _ := regexp.Compile(`^(/?)\S+(/?)$`)
-	result := r.FindString("a2a_66")
-	match := r.MatchString("a2a66")
-	println(result)
-	println(match)
+func c(logger2 *logger.Logger, string2 string) {
+	logger2.ERROR(string2)
 }
 
 var gg = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
 	//fmt.Println(r.Header.Get("Content-Type"))
+
 	for key, value := range request.HandleFunction {
 		if key.MatchString(r.URL.Path) {
 			ok, message, code := value.Valid(w, r)
 			if !ok {
+
+				go a(Logger, message)
+				go b(Logger, message)
+				go c(Logger, message)
+
 				http.Error(w, message, code)
 				return
 			}
-			(*value.Action)(w, r)
+			value.Action(w, r)
 			return
 		}
 	}
@@ -62,7 +48,57 @@ var gg = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	http.NotFound(w, r)
 })
 
+type Name struct {
+	Id   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+func t(ma map[string]string) {
+	ma["t"] = "q"
+}
+
+func q(ma *map[string]string) {
+	(*ma)["Q"] = "Q"
+}
+
+type nameq struct {
+	Name  *string
+	Name1 string
+	Bbb   []byte
+	ma    map[string]string
+}
+
+func qq(n *nameq) *nameq {
+	n.Name1 = "111"
+	n.Name = &n.Name1
+	n.Name1 = strconv.Itoa(time.Now().Nanosecond())
+	return n
+}
+
 func main() {
+
+	na := &nameq{}
+	qq(na)
+	ptr := unsafe.Pointer(na)
+
+	na2 := &(*(*nameq)(ptr))
+
+	fmt.Println(na2)
+	//na2.Bbb = make([]byte, 10)
+	na2.Name1 = "123213"
+	na2.Bbb = append(na2.Bbb, 22)
+	//na2.Bbb = nil
+	fmt.Println(na)
+
+	fmt.Println(na2)
+	return
+	request.Any("/qq", func(client *request.Client) {
+		client.Send("hello man")
+	})
+
+	request.Get("/", func(client *request.Client) {
+		client.Send("hello man")
+	})
 
 	request.Get("/", func(client *request.Client) {
 		client.Send("hello man")
@@ -101,4 +137,43 @@ func main() {
 	//	}),
 	//}
 	log.Fatal(s.ListenAndServe())
+}
+
+type Service interface {
+	Conns()
+}
+
+type MainService struct {
+	A int
+	B int
+}
+
+type MainService2 struct {
+	A int
+	B int
+}
+
+func (M MainService2) Conns() {
+	println("Conns")
+}
+
+func (M MainService) Connsq(service ...Service) {
+	service[0].Conns()
+}
+
+func (M MainService) Conns() {
+	println("Conns")
+}
+
+type Controller interface {
+	Service(Service)
+}
+
+type MainController struct {
+	MainService *MainService
+}
+
+func (M MainController) Service(service Service) {
+	mainService := service.(MainService)
+	M.MainService = &mainService
 }

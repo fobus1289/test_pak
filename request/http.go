@@ -8,19 +8,13 @@ import (
 	"strings"
 )
 
-var (
-	StatusUnauthorized = []byte(http.StatusText(405))
-	StatusBadRequest   = []byte(http.StatusText(400))
-	StatusNotFound     = []byte(http.StatusText(404))
-)
-
 var HandleFunction = map[*regexp.Regexp]*routeMatch{}
 
 type routeMatch struct {
 	Url    string
 	Method string
-	Action *func(writer http.ResponseWriter, request *http.Request)
-	Route  *route
+	Action func(writer http.ResponseWriter, request *http.Request)
+	Route  route
 }
 
 func (match *routeMatch) Valid(response http.ResponseWriter, request *http.Request) (ok bool, message string, code int) {
@@ -29,7 +23,7 @@ func (match *routeMatch) Valid(response http.ResponseWriter, request *http.Reque
 
 	if strings.HasPrefix(contend, "multipart/form-data") ||
 		strings.HasSuffix(contend, "application/x-www-form-urlencoded") {
-		fmt.Println(request.PostFormValue("id"))
+		//	fmt.Println(request.PostFormValue("id"))
 	} else if strings.HasPrefix(contend, "application/json") {
 		data, _ := ioutil.ReadAll(request.Body)
 		fmt.Println(string(data))
@@ -37,9 +31,9 @@ func (match *routeMatch) Valid(response http.ResponseWriter, request *http.Reque
 		return false, http.StatusText(415), http.StatusUnsupportedMediaType
 	}
 
-	_route := *match.Route
+	_route := match.Route
 
-	if request.Method != match.Method {
+	if match.Method != "ANY" && request.Method != match.Method {
 		return false, http.StatusText(405), http.StatusMethodNotAllowed
 	}
 
@@ -71,7 +65,6 @@ func handleFunc(url string, method string, action func(client *Client)) *route {
 
 	l := len(url)
 	var _Regexp regexp.Regexp
-
 	if l == 1 {
 		if strings.HasPrefix(url, "/") || url == "" {
 			url = "/"
@@ -104,24 +97,24 @@ func handleFunc(url string, method string, action func(client *Client)) *route {
 
 	}
 
-	var client *Client
+	var client Client
 	rou := new(route)
 
 	var fun = func(writer http.ResponseWriter, request *http.Request) {
 
-		client = &Client{
+		client = Client{
 			Request:  request,
 			Response: writer,
 		}
 
-		action(client)
+		action(&client)
 	}
 
 	HandleFunction[&_Regexp] = &routeMatch{
 		Url:    url,
 		Method: method,
-		Action: &fun,
-		Route:  rou,
+		Action: fun,
+		Route:  *rou,
 	}
 
 	return rou
@@ -147,57 +140,6 @@ func Delete(url string, action func(client *Client)) *route {
 	return handleFunc(url, "DELETE", action)
 }
 
-func hasUrl(request *http.Request) bool {
-	//path := request.URL.Path
-
-	//for _, regex := range regexps {
-	//	if regex.MatchString(path) {
-	//		return true
-	//	}
-	//}
-	return false
-}
-
-func valid(writer http.ResponseWriter, request *http.Request, rou *route, method string, client Client) bool {
-
-	if !hasUrl(request) {
-		writer.WriteHeader(http.StatusNotFound)
-		_, _ = writer.Write(StatusNotFound)
-		//http.Error(writer, "can't read body", http.StatusBadRequest)
-		return false
-	}
-
-	if request.Method != method {
-		writer.WriteHeader(http.StatusMethodNotAllowed)
-		_, _ = writer.Write(StatusUnauthorized)
-		return false
-	}
-	//_, err := ioutil.ReadAll(request.Body)
-	//
-	//if err != nil {
-	//	log.Printf("Error reading body: %v", err)
-	//	http.Error(writer, "can't read body", http.StatusBadRequest)
-	//	return false
-	//}
-	middlewares := rou.middlewares
-
-	if middlewares != nil {
-		for i := 0; i < len(middlewares); i++ {
-
-			if middlewares[i] == nil {
-				continue
-			}
-
-			_error, code, mgs := middlewares[i](client)
-
-			if _error {
-				writer.WriteHeader(code)
-				_, _ = writer.Write([]byte(mgs))
-				return false
-			}
-
-		}
-	}
-
-	return true
+func Any(url string, action func(client *Client)) *route {
+	return handleFunc(url, "ANY", action)
 }

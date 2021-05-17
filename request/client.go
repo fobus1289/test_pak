@@ -16,16 +16,18 @@ type Client struct {
 	PostFormValue func(key string)
 	body          io.ReadCloser
 	BodyString    string
-	BodyBytes     *[]byte
+	BodyBytes     []byte
 }
 
 func (client *Client) ParseBody() {
 	body, err := ioutil.ReadAll(client.body)
+
 	if err != nil {
 		println(err.Error())
 	}
-	client.BodyBytes = &body
-	ptr := unsafe.Pointer(client.BodyBytes)
+
+	client.BodyBytes = body
+	ptr := unsafe.Pointer(&client.BodyBytes)
 	client.BodyString = *(*string)(ptr)
 
 	client.BodyString = "sad"

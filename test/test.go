@@ -3,12 +3,15 @@ package main
 import (
 	"fmt"
 	"github.com/fobus1289/test_pak/logger"
+	"github.com/fobus1289/test_pak/logs"
 	"github.com/fobus1289/test_pak/request"
 	"log"
 	"net/http"
+	"reflect"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
-	"unsafe"
 )
 
 var Logger = logger.New()
@@ -75,22 +78,41 @@ func qq(n *nameq) *nameq {
 	return n
 }
 
+var validq, _ = regexp.Compile(`^(required|min:\d+|max:\d+)$`)
+
+func R(en interface{}) {
+
+	_type := reflect.TypeOf(en)
+
+	numFields := _type.NumField()
+
+	for i := 0; i < numFields; i++ {
+
+		field := _type.Field(i)
+
+		if value, ok := field.Tag.Lookup("validate"); ok {
+			vals := strings.Split(value, ",")
+			for _, val := range vals {
+				if validq.MatchString(val) {
+					fmt.Println(val)
+				}
+			}
+		}
+
+	}
+
+}
+
 func main() {
+	for i := 0; i < 1000000; i++ {
+		q1 := logs.QQQ{
+			Id:   i,
+			Name: "asdsfds",
+		}
 
-	na := &nameq{}
-	qq(na)
-	ptr := unsafe.Pointer(na)
+		go R(q1)
+	}
 
-	na2 := &(*(*nameq)(ptr))
-
-	fmt.Println(na2)
-	//na2.Bbb = make([]byte, 10)
-	na2.Name1 = "123213"
-	na2.Bbb = append(na2.Bbb, 22)
-	//na2.Bbb = nil
-	fmt.Println(na)
-
-	fmt.Println(na2)
 	return
 	request.Any("/qq", func(client *request.Client) {
 		client.Send("hello man")
@@ -104,7 +126,7 @@ func main() {
 		client.Send("hello man")
 	}).Middleware(func(client request.Client) (bool, int, string) {
 		return true, 200, "huh"
-	}).Request(&request.Request{})
+	})
 
 	request.Post("/get/", func(client *request.Client) {
 		client.SendJson(Name{

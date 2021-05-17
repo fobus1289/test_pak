@@ -46,13 +46,13 @@ func (match *routeMatch) Valid(response http.ResponseWriter, request *http.Reque
 				continue
 			}
 
-			_error, code, mgs := middlewares[i](Client{
+			_error, _code, mgs := middlewares[i](Client{
 				Response: response,
 				Request:  request,
 			})
 
 			if _error {
-				return false, mgs, code
+				return false, mgs, _code
 			}
 
 		}
@@ -65,6 +65,7 @@ func handleFunc(url string, method string, action func(client *Client)) *route {
 
 	l := len(url)
 	var _Regexp regexp.Regexp
+
 	if l == 1 {
 		if strings.HasPrefix(url, "/") || url == "" {
 			url = "/"
@@ -106,8 +107,8 @@ func handleFunc(url string, method string, action func(client *Client)) *route {
 			Request:  request,
 			Response: writer,
 		}
-
-		action(&client)
+		_action := action
+		_action(&client)
 	}
 
 	HandleFunction[&_Regexp] = &routeMatch{

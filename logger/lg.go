@@ -32,6 +32,7 @@ func New() *Logger {
 	filename := date()
 	path := "logs/" + filename
 	file, oerr := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+
 	if oerr != nil {
 		panic(oerr.Error())
 	}
